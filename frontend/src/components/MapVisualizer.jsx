@@ -5,8 +5,54 @@ import { useTranslation } from 'react-i18next';
 import MapStyleSwitcher from './MapStyleSwitcher';
 import ReportModal from './ReportModal';
 import DrawControl from './DrawControl';
+import html2pdf from 'html2pdf.js';
 import length from '@turf/length';
 import area from '@turf/area';
+
+/* Stylesheet for the exported well-site PDF. Inlined because the sheet is
+   built off-screen and rasterised, so it must not depend on app classes. */
+const PDF_SHEET_CSS = `
+.pdf-sheet { box-sizing: border-box; width: 794px; padding: 34px 38px 28px; background:#fff;
+  font-family: 'Almarai','Inter',system-ui,-apple-system,sans-serif; color:#0f172a; }
+.pdf-sheet * { box-sizing: border-box; }
+.pdf-sheet .hd { margin-bottom: 22px; }
+.pdf-sheet .hd-bar { height: 5px; width: 74px; border-radius: 3px;
+  background: linear-gradient(90deg,#06b6d4,#0891b2); margin-bottom: 14px; }
+/* No letter-spacing anywhere in this sheet: html2canvas draws text run by run
+   and any tracking value severs the joins between Arabic letters, turning
+   "المقترحة" into loose disconnected glyphs. */
+.pdf-sheet h1 { margin:0; font-size: 25px; font-weight: 800; color:#0f172a; }
+.pdf-sheet .sub { margin: 6px 0 0; font-size: 13px; color:#64748b; }
+.pdf-sheet .cards { display:flex; gap:10px; margin-bottom:20px; }
+.pdf-sheet .card { flex:1; border:1px solid #e2e8f0; border-radius:10px; padding:10px 12px;
+  background:#f8fafc; display:flex; flex-direction:column; gap:3px; }
+.pdf-sheet .card.wide { flex:2; }
+.pdf-sheet .card .k { font-size:10.5px; color:#94a3b8; font-weight:700; }
+.pdf-sheet .card .v { font-size:19px; font-weight:800; color:#0f172a; }
+.pdf-sheet .card .v.sm { font-size:12px; font-weight:600; color:#334155; }
+.pdf-sheet table { width:100%; border-collapse:collapse; font-size:12px; }
+.pdf-sheet thead th { background:#0f172a; color:#fff; font-weight:700; font-size:11px;
+  padding:9px 8px; text-align:start; border:1px solid #0f172a; }
+.pdf-sheet tbody td { padding:8px; border:1px solid #e2e8f0; color:#334155; vertical-align:top; }
+/* Latin-only cells must not be reordered by the surrounding Arabic direction. */
+.pdf-sheet th, .pdf-sheet td { unicode-bidi: plaintext; }
+.pdf-sheet tbody tr:nth-child(even) td { background:#f8fafc; }
+.pdf-sheet tr { page-break-inside: avoid; }
+.pdf-sheet td.c, .pdf-sheet th.c { text-align:center; }
+.pdf-sheet .mono { font-family:'Courier New',monospace; font-size:11.5px; white-space:nowrap; }
+.pdf-sheet .name { font-weight:600; color:#0f172a; }
+.pdf-sheet .note { color:#64748b; font-size:11px; }
+.pdf-sheet .w-no { width:34px; } .pdf-sheet .w-co { width:86px; } .pdf-sheet .w-src { width:74px; }
+/* A pill-shaped radius is clipped by html2canvas inside a table cell, so the
+   badge uses a plain rounded box that rasterises cleanly. */
+.pdf-sheet .tag { display:inline-block; padding:3px 8px; border-radius:6px; font-size:10px;
+  font-weight:700; line-height:1.5; }
+.pdf-sheet td.c { vertical-align:middle; }
+.pdf-sheet .tag.ai { background:#ede9fe; color:#6d28d9; }
+.pdf-sheet .tag.man { background:#cffafe; color:#0e7490; }
+.pdf-sheet .ft { margin-top:26px; padding-top:10px; border-top:1px solid #e2e8f0;
+  display:flex; justify-content:space-between; gap:16px; font-size:10.5px; color:#94a3b8; }
+`;
 
 /* SVG Icons */
 const PinIcon = () => (
@@ -90,6 +136,7 @@ const MapVisualizer = ({
   const [hoverInfo, setHoverInfo] = useState(null);
   const [selectedPin, setSelectedPin] = useState(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
   const [copied, setCopied] = useState(false);
   
   const [reportModalOpen, setReportModalOpen] = useState(false);
@@ -162,22 +209,50 @@ const MapVisualizer = ({
     setHoverInfo(hoveredFeature ? { lngLat, properties: hoveredFeature.properties } : null);
   }, []);
 
-  const onMapClick = useCallback((event) => {
-    const { lngLat } = event;
-    if (onPinPoint) {
-      const newPin = {
-        id: Date.now(),
-        longitude: parseFloat(lngLat.lng.toFixed(6)),
-        latitude: parseFloat(lngLat.lat.toFixed(6)),
-        timestamp: new Date().toISOString(),
-        zoom: viewState.zoom,
-        source: 'manual',
-        label: t('map.customPin', 'موقع محدد يدوياً')
-      };
-      onPinPoint(newPin);
-      setSelectedPin(newPin);
-    }
+  const dropPinAt = useCallback((lngLat) => {
+    if (!onPinPoint || !lngLat) return;
+    const newPin = {
+      id: Date.now(),
+      longitude: parseFloat(lngLat.lng.toFixed(6)),
+      latitude: parseFloat(lngLat.lat.toFixed(6)),
+      timestamp: new Date().toISOString(),
+      zoom: viewState.zoom,
+      source: 'manual',
+      label: t('map.customPin', 'موقع محدد يدوياً')
+    };
+    onPinPoint(newPin);
+    setSelectedPin(newPin);
   }, [onPinPoint, viewState.zoom, t]);
+
+  /* Taps never reached dropPinAt on phones: mapbox-gl-draw calls
+     preventDefault() on touchend, which stops the browser from synthesising
+     the click that `map.on('click')` depends on. So recognise the tap
+     ourselves — one finger, barely moved, released quickly — and ignore any
+     click that follows it so a single tap never drops two pins. */
+  const touchStartRef = useRef(null);
+  const lastTapRef = useRef(0);
+
+  const onTouchStart = useCallback((event) => {
+    const singleFinger = !event.points || event.points.length === 1;
+    touchStartRef.current = singleFinger && event.point
+      ? { x: event.point.x, y: event.point.y, time: Date.now() }
+      : null;
+  }, []);
+
+  const onTouchEnd = useCallback((event) => {
+    const start = touchStartRef.current;
+    touchStartRef.current = null;
+    if (!start || !event.point || !event.lngLat) return;
+    const moved = Math.hypot(event.point.x - start.x, event.point.y - start.y);
+    if (moved > 12 || Date.now() - start.time > 500) return; // a pan or a long press
+    lastTapRef.current = Date.now();
+    dropPinAt(event.lngLat);
+  }, [dropPinAt]);
+
+  const onMapClick = useCallback((event) => {
+    if (Date.now() - lastTapRef.current < 700) return; // already handled as a tap
+    dropPinAt(event.lngLat);
+  }, [dropPinAt]);
 
   const copyCoordinates = useCallback((pin) => {
     navigator.clipboard.writeText(`${pin.latitude}, ${pin.longitude}`).then(() => {
@@ -220,6 +295,96 @@ const MapVisualizer = ({
       setIsCapturing(false);
     }
   }, [activeLayers]);
+
+  /* ---- Professional PDF sheet of the saved well sites -------------------
+     Built as real DOM so html2canvas picks up the Arabic/Latin webfonts, then
+     rasterised by html2pdf. Kept off-screen rather than display:none, which
+     html2canvas cannot measure. */
+  const exportPinsAsPDF = useCallback(async () => {
+    const allPins = [...(pinnedPoints || []), ...(aiPins || [])];
+    if (allPins.length === 0 || isExportingPdf) return;
+    setIsExportingPdf(true);
+
+    const isAr = i18n.language.startsWith('ar');
+    const esc = (v) => String(v ?? '')
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    const now = new Date();
+    /* Arabic month names, Latin digits: html2canvas mangles Arabic-Indic
+       numerals, and the coordinates in the table are Latin anyway. */
+    const stamp = now.toLocaleString(isAr ? 'ar-EG-u-nu-latn' : 'id-ID', {
+      year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit'
+    });
+    const manualCount = allPins.filter(p => p.source !== 'ai').length;
+    const aiCount = allPins.length - manualCount;
+
+    const rows = allPins.map((p, i) => `
+      <tr>
+        <td class="c mono">${i + 1}</td>
+        <td class="name">${esc(p.label || t('map.customPin', 'موقع محدد يدوياً'))}</td>
+        <td class="c mono" dir="ltr">${Number(p.latitude).toFixed(5)}</td>
+        <td class="c mono" dir="ltr">${Number(p.longitude).toFixed(5)}</td>
+        <td class="c"><span class="tag ${p.source === 'ai' ? 'ai' : 'man'}">${
+          p.source === 'ai' ? t('map.aiRecommended', 'AI') : t('map.manual', 'Manual')
+        }</span></td>
+        <td class="note">${esc(p.reason || '—')}</td>
+      </tr>`).join('');
+
+    const html = `
+      <div class="pdf-sheet" dir="${isAr ? 'rtl' : 'ltr'}">
+        <div class="hd">
+          <div class="hd-bar"></div>
+          <h1>${esc(t('pdf.title', 'سجل مواقع الآبار المقترحة'))}</h1>
+          <p class="sub">${esc(t('pdf.subtitle', 'جزيرة فلوريس — نوسا تينجارا الشرقية، إندونيسيا'))}</p>
+        </div>
+        <div class="cards">
+          <div class="card"><span class="k">${esc(t('pdf.total', 'إجمالي المواقع'))}</span><span class="v">${allPins.length}</span></div>
+          <div class="card"><span class="k">${esc(t('map.manual', 'Manual'))}</span><span class="v">${manualCount}</span></div>
+          <div class="card"><span class="k">${esc(t('map.aiRecommended', 'AI'))}</span><span class="v">${aiCount}</span></div>
+          <div class="card wide"><span class="k">${esc(t('pdf.generated', 'تاريخ الإصدار'))}</span><span class="v sm">${esc(stamp)}</span></div>
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th class="c w-no">#</th>
+              <th>${esc(t('pdf.colName', 'اسم الموقع'))}</th>
+              <th class="c w-co">${esc(t('map.latitude', 'خط العرض'))}</th>
+              <th class="c w-co">${esc(t('map.longitude', 'خط الطول'))}</th>
+              <th class="c w-src">${esc(t('pdf.colSource', 'المصدر'))}</th>
+              <th>${esc(t('pdf.colNotes', 'ملاحظات'))}</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+        <div class="ft">
+          <div>${esc(t('pdf.crs', 'نظام الإحداثيات: WGS 84 (EPSG:4326) — بالدرجات العشرية'))}</div>
+          <div>${esc(t('pdf.footer', 'لوحة تحليل المياه الجوفية — جزيرة فلوريس'))}</div>
+        </div>
+      </div>`;
+
+    const holder = document.createElement('div');
+    holder.setAttribute('style', 'position:fixed;left:-10000px;top:0;width:794px;background:#ffffff;z-index:-1;');
+    holder.innerHTML = `<style>${PDF_SHEET_CSS}</style>${html}`;
+    document.body.appendChild(holder);
+
+    try {
+      await html2pdf().set({
+        /* The sheet is exactly one A4 width (794px @96dpi) and carries its own
+           padding, so any page margin here would scale it down and clip the
+           right-hand column. */
+        margin: 0,
+        filename: `Flores_Well_Sites_${now.toISOString().slice(0, 10)}.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, logging: false, backgroundColor: '#ffffff' },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        pagebreak: { mode: ['css', 'legacy'], avoid: 'tr' },
+      }).from(holder.querySelector('.pdf-sheet')).save();
+    } catch (err) {
+      console.error('PDF export failed:', err);
+    } finally {
+      document.body.removeChild(holder);
+      setIsExportingPdf(false);
+    }
+  }, [pinnedPoints, aiPins, isExportingPdf, i18n.language, t]);
 
   const exportPinsAsGeoJSON = useCallback(() => {
     const allPins = [...(pinnedPoints || []), ...(aiPins || [])];
@@ -265,6 +430,8 @@ const MapVisualizer = ({
         ]}
         onMouseMove={onHover}
         onClick={onMapClick}
+        onTouchStart={onTouchStart}
+        onTouchEnd={onTouchEnd}
         cursor="crosshair"
       >
         <NavigationControl position="top-right" showCompass={true} />
@@ -477,8 +644,7 @@ const MapVisualizer = ({
           <Popup
             longitude={selectedPin.longitude}
             latitude={selectedPin.latitude}
-            anchor="bottom"
-            offset={35}
+            offset={22}
             maxWidth="300px"
             onClose={() => setSelectedPin(null)}
             closeOnClick={false}
@@ -600,12 +766,28 @@ const MapVisualizer = ({
           </div>
         </div>
         {totalPins > 0 && (
-          <button
-            onClick={exportPinsAsGeoJSON}
-            className="flex items-center gap-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-xl px-3.5 min-h-11 shadow-lg border border-slate-200/60 dark:border-slate-700/60 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 active:scale-95 text-xs text-slate-800 dark:text-slate-200 font-semibold transition-all"
-          >
-            <DownloadIcon /> {t('map.exportPins')} ({totalPins})
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={exportPinsAsPDF}
+              disabled={isExportingPdf}
+              className="flex items-center gap-2 bg-cyan-600 hover:bg-cyan-700 disabled:bg-cyan-600/60 text-white rounded-xl px-3.5 min-h-11 shadow-lg active:scale-95 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400"
+            >
+              {isExportingPdf
+                ? <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                : <DownloadIcon />}
+              {t('map.exportPdf', 'تقرير PDF')} ({totalPins})
+            </button>
+            {/* GeoJSON stays available: it is the format that opens in QGIS
+                and other GIS tools, which the PDF cannot replace. */}
+            <button
+              onClick={exportPinsAsGeoJSON}
+              title="GeoJSON"
+              aria-label="GeoJSON"
+              className="grid place-items-center min-w-11 h-11 px-2.5 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-xl shadow-lg border border-slate-200/60 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-800 active:scale-95 text-[10px] text-slate-500 dark:text-slate-400 font-bold transition-all"
+            >
+              GEO
+            </button>
+          </div>
         )}
       </div>
 
