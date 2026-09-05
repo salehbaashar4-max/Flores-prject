@@ -47,16 +47,16 @@ const MapStyleSwitcher = ({ currentStyle, onStyleChange, isSidebarOpen }) => {
   const currentStyleObj = MAP_STYLES.find(s => s.style === currentStyle) || MAP_STYLES[2];
 
   return (
-    <div 
-      className={`absolute top-4 z-10 transition-all duration-300 ease-in-out ${
-        isSidebarOpen 
-          ? 'left-80 rtl:left-auto rtl:right-80 ml-4 rtl:ml-0 rtl:mr-4' 
-          : 'left-4 rtl:left-auto rtl:right-4'
+    <div
+      className={`map-style-switcher transition-all duration-300 ease-in-out ${
+        isSidebarOpen ? 'with-sidebar' : ''
       }`}
     >
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center gap-2 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-xl px-3 py-2.5 shadow-lg border border-slate-200/50 dark:border-slate-700/50 hover:bg-white dark:hover:bg-slate-800 transition-all text-sm font-medium text-slate-700 dark:text-slate-300"
+        aria-label={t(currentStyleObj.labelKey)}
+        aria-expanded={isOpen}
+        className="flex items-center justify-center gap-2 min-w-11 h-11 px-3 bg-white/90 dark:bg-slate-800/90 backdrop-blur-md rounded-xl shadow-lg border border-slate-200/50 dark:border-slate-700/50 hover:bg-white dark:hover:bg-slate-800 active:scale-95 transition-all text-sm font-medium text-slate-700 dark:text-slate-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60"
       >
         <LayersIcon />
         <span className="hidden sm:inline">{t(currentStyleObj.labelKey)}</span>
@@ -68,7 +68,7 @@ const MapStyleSwitcher = ({ currentStyle, onStyleChange, isSidebarOpen }) => {
             <button
               key={s.id}
               onClick={() => { onStyleChange(s.style); setIsOpen(false); }}
-              className={`w-full flex items-center gap-3 px-4 py-2.5 text-left rtl:text-right transition-colors ${
+              className={`w-full flex items-center gap-3 px-4 min-h-11 py-2.5 text-left rtl:text-right transition-colors ${
                 currentStyle === s.style
                   ? 'bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300'
                   : 'hover:bg-slate-50 dark:hover:bg-slate-700/50 text-slate-700 dark:text-slate-300'

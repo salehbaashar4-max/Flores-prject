@@ -16,7 +16,9 @@ const LanguageSwitcher = () => {
         <button
           key={lang.code}
           onClick={() => i18n.changeLanguage(lang.code)}
-          className={`px-3 py-1.5 text-sm font-semibold transition-all duration-200 ${
+          aria-label={lang.fullName}
+          aria-pressed={currentLang === lang.code || currentLang.startsWith(lang.code)}
+          className={`grid place-items-center min-w-9 px-2.5 h-11 text-sm font-semibold transition-all duration-200 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-cyan-500/60 ${
             currentLang === lang.code || currentLang.startsWith(lang.code)
               ? 'bg-cyan-500 text-white shadow-sm'
               : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-750'

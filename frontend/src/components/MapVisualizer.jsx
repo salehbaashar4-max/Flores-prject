@@ -591,9 +591,9 @@ const MapVisualizer = ({
       <MapStyleSwitcher currentStyle={mapStyle} onStyleChange={setMapStyle} isSidebarOpen={isSidebarOpen} />
 
       {/* Floating Bottom Coordinates & GeoJSON Exporter */}
-      <div className="absolute bottom-6 left-6 rtl:left-auto rtl:right-6 flex flex-col gap-2 z-10">
+      <div className={`map-bottom-stack flex flex-col gap-2 transition-all duration-300 ease-in-out ${isSidebarOpen ? 'with-sidebar' : ''}`}>
         <div className="bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-xl px-3.5 py-2 shadow-lg border border-slate-200/60 dark:border-slate-700/60">
-          <div className="flex items-center gap-2 text-xs font-mono text-slate-700 dark:text-slate-300">
+          <div className="flex items-center gap-2 text-xs font-mono text-slate-700 dark:text-slate-300" dir="ltr">
             <CrosshairIcon />
             <span>{viewState.latitude.toFixed(4)}°, {viewState.longitude.toFixed(4)}°</span>
             <span className="text-slate-400">z{viewState.zoom.toFixed(1)}</span>
@@ -602,7 +602,7 @@ const MapVisualizer = ({
         {totalPins > 0 && (
           <button
             onClick={exportPinsAsGeoJSON}
-            className="flex items-center gap-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-xl px-3.5 py-2 shadow-lg border border-slate-200/60 dark:border-slate-700/60 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 text-xs text-slate-800 dark:text-slate-200 font-semibold transition-colors"
+            className="flex items-center gap-2 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md rounded-xl px-3.5 min-h-11 shadow-lg border border-slate-200/60 dark:border-slate-700/60 hover:bg-cyan-50 dark:hover:bg-cyan-900/30 active:scale-95 text-xs text-slate-800 dark:text-slate-200 font-semibold transition-all"
           >
             <DownloadIcon /> {t('map.exportPins')} ({totalPins})
           </button>

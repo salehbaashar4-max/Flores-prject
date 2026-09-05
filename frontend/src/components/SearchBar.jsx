@@ -15,6 +15,19 @@ const ClearIcon = () => (
 
 const SearchBar = ({ onSelectLocation }) => {
   const { t } = useTranslation();
+  /* The full placeholder is written for the desktop header and is clipped
+     mid-word in the phone's floating bar, so narrow screens get a short one. */
+  const [isNarrow, setIsNarrow] = useState(
+    typeof window !== 'undefined' && window.innerWidth < 768
+  );
+  useEffect(() => {
+    const onResize = () => setIsNarrow(window.innerWidth < 768);
+    window.addEventListener('resize', onResize);
+    return () => window.removeEventListener('resize', onResize);
+  }, []);
+  const placeholder = isNarrow
+    ? t('search.placeholderShort', t('search.placeholder'))
+    : t('search.placeholder');
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [isOpen, setIsOpen] = useState(false);
@@ -71,8 +84,8 @@ const SearchBar = ({ onSelectLocation }) => {
   };
 
   return (
-    <div ref={wrapperRef} className="relative w-72">
-      <div className="flex items-center bg-slate-100 dark:bg-slate-800 rounded-xl px-3 py-2 border border-transparent focus-within:border-cyan-500/50 focus-within:ring-2 focus-within:ring-cyan-500/20 transition-all">
+    <div ref={wrapperRef} className="relative w-full md:w-72">
+      <div className="flex items-center bg-white/95 dark:bg-slate-800 md:bg-slate-100 shadow-lg md:shadow-none rounded-xl px-3 min-h-11 border border-slate-200/70 dark:border-slate-700/70 md:border-transparent focus-within:border-cyan-500/50 focus-within:ring-2 focus-within:ring-cyan-500/20 transition-all">
         <span className="text-slate-400 dark:text-slate-500 mr-2 rtl:mr-0 rtl:ml-2 flex-shrink-0">
           {isLoading ? (
             <div className="w-4 h-4 border-2 border-slate-300 dark:border-slate-600 border-t-cyan-500 rounded-full animate-spin" />
@@ -85,12 +98,20 @@ const SearchBar = ({ onSelectLocation }) => {
           value={query}
           onChange={(e) => handleSearch(e.target.value)}
           onFocus={() => results.length > 0 && setIsOpen(true)}
-          placeholder={t('search.placeholder')}
-          className="flex-1 bg-transparent text-sm text-slate-700 dark:text-slate-300 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none"
+          placeholder={placeholder}
+          aria-label={t('search.placeholder')}
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck="false"
+          enterKeyHint="search"
+          className="flex-1 min-w-0 self-stretch bg-transparent text-base md:text-sm text-slate-700 dark:text-slate-300 placeholder-slate-400 dark:placeholder-slate-600 focus:outline-none"
         />
         {query && (
-          <button onClick={() => { setQuery(''); setResults([]); setIsOpen(false); }}
-            className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 ml-1 rtl:ml-0 rtl:mr-1">
+          <button
+            type="button"
+            onClick={() => { setQuery(''); setResults([]); setIsOpen(false); }}
+            aria-label={t('search.clear', 'Clear')}
+            className="shrink-0 grid place-items-center w-9 h-9 -mr-1.5 rtl:-mr-0 rtl:-ml-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-200/70 dark:hover:bg-slate-700/70 transition-colors">
             <ClearIcon />
           </button>
         )}
@@ -98,17 +119,17 @@ const SearchBar = ({ onSelectLocation }) => {
 
       {/* Results dropdown */}
       {isOpen && results.length > 0 && (
-        <div className="absolute top-full mt-1 w-full bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200/60 dark:border-slate-700/60 overflow-hidden z-50 backdrop-blur-xl">
+        <div className="absolute top-full mt-1 w-full max-h-[50vh] overflow-y-auto overscroll-contain bg-white dark:bg-slate-800 rounded-xl shadow-2xl border border-slate-200/60 dark:border-slate-700/60 z-50 backdrop-blur-xl">
           {results.map((feature) => (
             <button
               key={feature.id}
               onClick={() => handleSelect(feature)}
               className="w-full text-left rtl:text-right px-4 py-3 hover:bg-slate-50 dark:hover:bg-slate-700/50 border-b border-slate-100 dark:border-slate-700/50 last:border-b-0 transition-colors"
             >
-              <p className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
+              <p dir="auto" className="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">
                 {feature.text}
               </p>
-              <p className="text-[11px] text-slate-400 dark:text-slate-500 truncate mt-0.5">
+              <p dir="auto" className="text-[11px] text-slate-400 dark:text-slate-500 truncate mt-0.5">
                 {feature.place_name}
               </p>
             </button>

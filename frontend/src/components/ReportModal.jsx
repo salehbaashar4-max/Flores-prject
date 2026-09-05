@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import html2pdf from 'html2pdf.js';
 
 const CloseIcon = () => (
@@ -37,8 +38,8 @@ const ReportModal = ({ isOpen, onClose, reportContent }) => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl w-full max-w-3xl h-[85vh] flex flex-col shadow-2xl overflow-hidden">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-2 sm:p-4 bg-black/60 backdrop-blur-sm">
+      <div className="bg-white rounded-2xl w-full max-w-3xl h-[90dvh] sm:h-[85dvh] flex flex-col shadow-2xl overflow-hidden">
         
         {/* Header */}
         <div className="flex items-center justify-between p-5 border-b border-gray-200 bg-gray-50">
@@ -65,7 +66,7 @@ const ReportModal = ({ isOpen, onClose, reportContent }) => {
         </div>
 
         {/* Content Body (Strict standard hex colors for html2canvas compatibility) */}
-        <div className="flex-1 overflow-y-auto p-8 bg-white">
+        <div className="flex-1 overflow-y-auto overscroll-contain p-4 sm:p-8 bg-white">
           {!reportContent ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-500">
               <div className="w-8 h-8 border-4 border-sky-500 border-t-transparent rounded-full animate-spin mb-4" />
@@ -97,7 +98,7 @@ const ReportModal = ({ isOpen, onClose, reportContent }) => {
                 .markdown-body hr { border: none; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
               `}</style>
               
-              <ReactMarkdown>{reportContent}</ReactMarkdown>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{reportContent}</ReactMarkdown>
               
               {/* Footer for PDF */}
               <div style={{ marginTop: '4rem', paddingTop: '1rem', borderTop: '1px solid #e5e7eb', fontSize: '0.8rem', color: '#6b7280', textAlign: 'center' }}>

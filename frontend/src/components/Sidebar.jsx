@@ -8,11 +8,11 @@ const LayerToggle = ({ id, label, checked, onChange, color }) => (
     aria-checked={checked}
     aria-label={label}
     onClick={() => onChange(id)}
-    className="w-full flex items-center justify-between py-2.5 px-3 rounded-xl hover:bg-slate-100/70 dark:hover:bg-slate-800/70 cursor-pointer transition-colors duration-150 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60"
+    className="w-full flex items-center justify-between gap-3 min-h-11 py-2 px-3 rounded-xl hover:bg-slate-100/70 active:bg-slate-200/70 dark:active:bg-slate-700/70 dark:hover:bg-slate-800/70 cursor-pointer transition-colors duration-150 select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60"
   >
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 min-w-0">
       <div className={`w-3 h-3 rounded-full ${color} shadow-sm`} />
-      <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+      <span className="text-sm font-medium text-slate-700 dark:text-slate-200 text-start">
         {label}
       </span>
     </div>
@@ -50,8 +50,8 @@ const Sidebar = ({ activeLayers, onToggleLayer, isOpen = false, onClose, wmsLaye
 
   return (
     <aside
-      className={`absolute top-14 md:top-0 bottom-0 left-0 rtl:left-auto rtl:right-0 z-40
-        w-80 max-w-[85vw] overflow-y-auto
+      className={`absolute inset-y-0 left-0 rtl:left-auto rtl:right-0 z-40
+        w-80 max-w-[85vw] overflow-hidden
         bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl
         border-r rtl:border-r-0 rtl:border-l border-slate-200/70 dark:border-slate-800/70
         flex flex-col shadow-2xl
@@ -59,7 +59,7 @@ const Sidebar = ({ activeLayers, onToggleLayer, isOpen = false, onClose, wmsLaye
         ${isOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full'}`}
     >
       {/* Header */}
-      <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
+      <div className="shrink-0 p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
         <h2 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
           {t('sidebar.layers')}
         </h2>
@@ -71,14 +71,14 @@ const Sidebar = ({ activeLayers, onToggleLayer, isOpen = false, onClose, wmsLaye
           <button
             onClick={onClose}
             aria-label={t('ai.close', 'إغلاق')}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="grid place-items-center w-11 h-11 -mr-1.5 rtl:-mr-0 rtl:-ml-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500/60"
           >
             <CloseIcon />
           </button>
         </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto p-3 space-y-4">
+      <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-3 space-y-4">
         {/* Groundwater Analysis Section */}
         <div>
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3 mb-1.5">
@@ -145,7 +145,7 @@ const Sidebar = ({ activeLayers, onToggleLayer, isOpen = false, onClose, wmsLaye
       </div>
 
       {/* Legend */}
-      <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
+      <div className="shrink-0 max-h-[45%] overflow-y-auto overscroll-contain p-4 pb-safe border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-950/30">
         <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">
           {t('sidebar.legend')}
         </h3>
