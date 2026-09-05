@@ -55,6 +55,7 @@
     "copied": "Berhasil Disalin",
     "capture": "Ambil Foto Satelit",
     "exportPins": "Ekspor Titik Lokasi",
+    "exportPdf": "Laporan PDF",
     "generateReport": "Buat Laporan Geologi PDF",
     "customPin": "Lokasi Pilihan Manual",
     "aiRecommended": "Rekomendasi AI",
@@ -94,6 +95,17 @@
     "generating": "Menyiapkan laporan...",
     "footer": "Laporan ini dibuat secara otomatis oleh Generator Hidrogeologi Cerdas - Platform Pulau Flores.",
     "generatedOn": "Dibuat pada"
+  },
+  "pdf": {
+    "title": "Daftar Lokasi Sumur Usulan",
+    "subtitle": "Pulau Flores — Nusa Tenggara Timur, Indonesia",
+    "total": "Total Lokasi",
+    "generated": "Tanggal Terbit",
+    "colName": "Nama Lokasi",
+    "colSource": "Sumber",
+    "colNotes": "Catatan",
+    "crs": "Sistem koordinat: WGS 84 (EPSG:4326) — derajat desimal",
+    "footer": "Dasbor Pemetaan Potensi Air Tanah — Pulau Flores"
   },
   "search": {
     "placeholder": "Cari desa atau lokasi di Flores (misal: Maumere, Ruteng...)",
