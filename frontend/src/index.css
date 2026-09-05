@@ -20,8 +20,14 @@
   text-align: right;
   font-family: var(--font-arabic);
 }
-[dir="rtl"] * {
-  font-family: var(--font-arabic);
+/* Inheritance already carries the Arabic face to descendants. The old
+   `[dir="rtl"] *` rule also beat every utility class, so `font-mono` on the
+   coordinate readout and code blocks silently stopped working in Arabic. */
+
+/* Elements that resolve their own direction from their content (mixed-language
+   chat, place names) must not inherit the root's `text-align: right`. */
+[dir="auto"] {
+  text-align: start;
 }
 [dir="ltr"] {
   font-family: var(--font-sans);
@@ -98,7 +104,7 @@ body {
   padding: 0 !important;
   box-shadow: 0 20px 60px rgba(0,0,0,0.15) !important;
   overflow: visible;
-  min-width: 300px;
+  min-width: min(300px, 78vw);
 }
 .dark .mapboxgl-popup-content {
   background: #1e293b !important;
@@ -131,3 +137,141 @@ body {
   border: 2px solid #06b6d4;
   animation: pulse-ring 1.5s ease-out infinite;
 }
+
+
+/* ============================================================
+   MOBILE ERGONOMICS
+   ============================================================ */
+
+/* The app shell is exactly one viewport tall. `100vh` is wrong on phones:
+   it excludes the browser's collapsing address bar, so the bottom of the UI
+   is pushed under it. `100dvh` tracks the visible area instead. */
+html, body, #root { height: 100%; }
+
+/* Stop the page from rubber-banding / pull-to-refreshing while panning a map. */
+html, body { overscroll-behavior: none; }
+
+/* iOS Safari auto-zooms into any field whose text is smaller than 16px, and
+   never zooms back out. Keep every input at 16px on phones. */
+@media (max-width: 767px) {
+  input, textarea, select { font-size: 16px !important; }
+}
+
+/* Tap highlight: use our own active states, not the grey iOS flash. */
+button, [role="button"], a { -webkit-tap-highlight-color: transparent; }
+
+/* Anything that must clear the phone's home indicator / gesture bar. */
+.pb-safe { padding-bottom: env(safe-area-inset-bottom, 0px); }
+
+/* --- Map chrome ------------------------------------------------------- */
+
+/* Mapbox's own control group, restyled to match the app and sized for touch. */
+.mapboxgl-ctrl-group {
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+}
+.dark .mapboxgl-ctrl-group { background: #1e293b !important; }
+.dark .mapboxgl-ctrl-group button + button { border-top: 1px solid rgba(71, 85, 105, 0.5) !important; }
+.dark .mapboxgl-ctrl-group button .mapboxgl-ctrl-icon { filter: invert(1) brightness(1.6); }
+
+@media (max-width: 767px) {
+  /* 32x32 is below the 44px minimum touch target. */
+  .mapboxgl-ctrl-group button { width: 44px !important; height: 44px !important; }
+  /* Drop the control stacks below the floating search bar so nothing overlaps. */
+  .mapboxgl-ctrl-top-right { margin-top: 4.25rem; margin-right: 0.25rem; }
+  .mapboxgl-ctrl-top-left  { margin-top: 4.25rem; margin-left: 0.25rem; }
+  /* Keep the logo and attribution above the gesture bar. */
+  .mapboxgl-ctrl-bottom-left,
+  .mapboxgl-ctrl-bottom-right { padding-bottom: env(safe-area-inset-bottom, 0px); }
+}
+
+/* Mapbox anchors its controls to physical corners and does not mirror for RTL,
+   so in Arabic the zoom stack stayed top-right — on top of the style switcher
+   on phones, and behind the (right-hand) sidebar on desktop. Mirror it. */
+[dir="rtl"] .mapboxgl-ctrl-top-right { left: 0; right: auto; }
+[dir="rtl"] .mapboxgl-ctrl-top-right .mapboxgl-ctrl { float: left; }
+[dir="rtl"] .mapboxgl-ctrl-bottom-right { left: 0; right: auto; }
+[dir="rtl"] .mapboxgl-ctrl-bottom-right .mapboxgl-ctrl { float: left; }
+[dir="rtl"] .mapboxgl-ctrl-bottom-left { right: 0; left: auto; }
+[dir="rtl"] .mapboxgl-ctrl-bottom-left .mapboxgl-ctrl { float: right; }
+@media (max-width: 767px) {
+  [dir="rtl"] .mapboxgl-ctrl-top-right { margin-left: 0.25rem; margin-right: 0; }
+}
+
+/* Style switcher — positioned with logical properties so RTL mirrors for free.
+   On phones it sits under the search bar instead of behind it. */
+.map-style-switcher {
+  position: absolute;
+  z-index: 10;
+  top: 4.5rem;
+  inset-inline-start: 0.75rem;
+}
+@media (min-width: 768px) {
+  .map-style-switcher { top: 1rem; inset-inline-start: 1rem; }
+  .map-style-switcher.with-sidebar { inset-inline-start: 21rem; }
+}
+
+/* Coordinate readout + export button, clear of the Mapbox attribution row.
+   Numbers inside must stay LTR: Arabic bidi otherwise moves the minus sign
+   and comma to the wrong end of the coordinate pair. */
+.map-bottom-stack {
+  position: absolute;
+  z-index: 10;
+  inset-inline-start: 0.75rem;
+  bottom: calc(2.75rem + env(safe-area-inset-bottom, 0px));
+}
+@media (min-width: 768px) {
+  .map-bottom-stack { inset-inline-start: 1.5rem; bottom: 1.5rem; }
+  /* The drawer overlays the map on desktop too, so slide the readout clear of
+     it instead of letting it sit underneath. */
+  .map-bottom-stack.with-sidebar { inset-inline-start: 21.5rem; }
+}
+
+
+/* ============================================================
+   MARKDOWN IN CHAT BUBBLES
+   Model replies arrive as markdown; without these the lists lose their
+   markers and GFM tables collapse into a wall of pipe characters.
+   ============================================================ */
+.markdown-body > :first-child { margin-top: 0; }
+.markdown-body > :last-child { margin-bottom: 0; }
+.markdown-body p { margin: 0 0 0.5rem; }
+.markdown-body strong { font-weight: 600; }
+.markdown-body ul { list-style: disc; padding-inline-start: 1.25rem; margin: 0.25rem 0 0.5rem; }
+.markdown-body ol { list-style: decimal; padding-inline-start: 1.25rem; margin: 0.25rem 0 0.5rem; }
+.markdown-body li { margin: 0.15rem 0; }
+.markdown-body h1, .markdown-body h2 { font-weight: 700; font-size: 1em; margin: 0.6rem 0 0.3rem; }
+.markdown-body h3 { font-weight: 600; font-size: 1em; margin: 0.5rem 0 0.25rem; }
+.markdown-body a { color: #0891b2; text-decoration: underline; }
+.markdown-body code {
+  font-size: 0.9em;
+  padding: 0.1em 0.35em;
+  border-radius: 6px;
+  background: rgba(148, 163, 184, 0.18);
+}
+.markdown-body pre { overflow-x: auto; padding: 0.6rem; border-radius: 10px; background: rgba(148,163,184,0.15); }
+.markdown-body blockquote {
+  border-inline-start: 3px solid rgba(148, 163, 184, 0.5);
+  padding-inline-start: 0.65rem;
+  margin: 0.4rem 0;
+  opacity: 0.9;
+}
+/* Tables scroll inside the bubble rather than widening it. */
+.markdown-body table {
+  display: block;
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 0.5rem 0;
+  font-size: 0.92em;
+}
+.markdown-body th, .markdown-body td {
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  padding: 0.3rem 0.55rem;
+  text-align: start;
+  white-space: nowrap;
+}
+.markdown-body th { background: rgba(148, 163, 184, 0.15); font-weight: 600; }
