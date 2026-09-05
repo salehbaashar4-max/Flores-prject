@@ -273,5 +273,99 @@ button, [role="button"], a { -webkit-tap-highlight-color: transparent; }
   padding: 0.3rem 0.55rem;
   text-align: start;
   white-space: nowrap;
+  unicode-bidi: plaintext;
 }
 .markdown-body th { background: rgba(148, 163, 184, 0.15); font-weight: 600; }
+
+/* ============================================================
+   PRINTED REPORT
+   Plain hex colours and no CSS variables on purpose: html2canvas rasterises
+   this subtree for the PDF and renders modern colour functions unreliably.
+   Alignment uses logical properties so the Arabic and Indonesian reports
+   both come out correctly.
+   ============================================================ */
+.report-body {
+  color: #1f2937;
+  background-color: #ffffff;
+  line-height: 1.7;
+  font-size: 15px;
+}
+.report-body > :first-child { margin-top: 0; }
+.report-body h1 {
+  color: #0f172a;
+  font-size: 1.7rem;
+  font-weight: 800;
+  border-bottom: 3px solid #06b6d4;
+  padding-bottom: 0.5rem;
+  margin: 0 0 1.4rem;
+}
+.report-body h2 {
+  color: #0f172a;
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin: 1.8rem 0 0.7rem;
+  padding-bottom: 0.3rem;
+  border-bottom: 1px solid #e5e7eb;
+}
+.report-body h3 { color: #334155; font-size: 1.05rem; font-weight: 700; margin: 1.2rem 0 0.45rem; }
+.report-body p { margin: 0 0 0.9rem; color: #4b5563; }
+.report-body ul { list-style: disc; }
+.report-body ol { list-style: decimal; }
+.report-body ul, .report-body ol { margin: 0 0 1rem; padding-inline-start: 1.6rem; color: #4b5563; }
+.report-body li { margin-bottom: 0.3rem; }
+.report-body strong { color: #0f172a; font-weight: 700; }
+.report-body hr { border: none; border-top: 1px solid #e5e7eb; margin: 1.8rem 0; }
+.report-body blockquote {
+  margin: 0.8rem 0;
+  padding: 0.5rem 0.9rem;
+  border-inline-start: 4px solid #06b6d4;
+  background-color: #f0fdff;
+  color: #334155;
+}
+
+/* Cost tables are the part people actually read: give them real structure. */
+.report-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0 1.5rem;
+  font-size: 0.88rem;
+  page-break-inside: avoid;
+}
+.report-body thead th {
+  background-color: #0f172a;
+  color: #ffffff;
+  font-weight: 700;
+  text-align: start;
+  padding: 10px 12px;
+  border: 1px solid #0f172a;
+  white-space: nowrap;
+}
+.report-body td {
+  padding: 9px 12px;
+  border: 1px solid #e5e7eb;
+  color: #4b5563;
+  vertical-align: top;
+}
+/* Each cell resolves its own direction from its content. Without this an
+   all-Latin cell inside an Arabic report is reordered by the surrounding RTL
+   paragraph and "$400 - $600" is displayed as "$600 - $400" — a cost range
+   that reads backwards. */
+.report-body th, .report-body td { unicode-bidi: plaintext; }
+.report-body tbody tr:nth-child(even) td { background-color: #f8fafc; }
+.report-body tbody tr:last-child td strong { color: #0e7490; }
+.report-body tr { page-break-inside: avoid; }
+.report-body code {
+  font-size: 0.9em;
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+.report-footer {
+  margin-top: 3rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+  font-size: 0.78rem;
+  color: #6b7280;
+  text-align: center;
+}
