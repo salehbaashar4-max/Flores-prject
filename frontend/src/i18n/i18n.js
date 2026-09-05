@@ -21,10 +21,16 @@ i18n
     },
   });
 
-// Set document direction based on language
-i18n.on('languageChanged', (lng) => {
+// Keep <html dir/lang> in sync with the active language.
+// This must also run for the language resolved at startup: the
+// `languageChanged` event fires during init(), before the listener below is
+// attached, so without the explicit call an Arabic first load stayed LTR.
+const applyDirection = (lng) => {
   document.documentElement.dir = lng === 'ar' ? 'rtl' : 'ltr';
-  document.documentElement.lang = lng;
-});
+  document.documentElement.lang = lng === 'ar' ? 'ar' : 'id';
+};
+
+i18n.on('languageChanged', applyDirection);
+applyDirection(i18n.resolvedLanguage || i18n.language || 'id');
 
 export default i18n;

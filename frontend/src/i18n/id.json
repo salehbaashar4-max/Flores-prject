@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "Dasbor Pemetaan Potensi Air Tanah",
-    "subtitle": "Pulau Flores — Indonesia"
+    "subtitle": "Pulau Flores — Indonesia",
+    "titleShort": "Potensi Air Tanah"
   },
   "sidebar": {
     "layers": "Lapisan Geografis",
@@ -84,7 +85,8 @@
     "quickLabel2": "Analisis Cekungan Maumere dan formasi batuan",
     "quickPrompt3": "Berapa estimasi biaya pengeboran sumur artesis di Pulau Flores?",
     "quickLabel3": "Estimasi biaya pengeboran sumur artesis",
-    "pinsDropped": "Beberapa titik diabaikan karena berada di luar daratan."
+    "pinsDropped": "Beberapa titik diabaikan karena berada di luar daratan.",
+    "placeholderShort": "Ketik pertanyaan..."
   },
   "report": {
     "title": "Laporan Eksplorasi Hidrogeologi Komprehensif",
@@ -94,7 +96,9 @@
     "generatedOn": "Dibuat pada"
   },
   "search": {
-    "placeholder": "Cari desa atau lokasi di Flores (misal: Maumere, Ruteng...)"
+    "placeholder": "Cari desa atau lokasi di Flores (misal: Maumere, Ruteng...)",
+    "placeholderShort": "Cari lokasi di Flores",
+    "clear": "Hapus"
   },
   "mapStyles": {
     "streets": "Jalan & Bangunan",
