@@ -131,3 +131,21 @@ body {
   border: 2px solid #06b6d4;
   animation: pulse-ring 1.5s ease-out infinite;
 }
+
+/* === Mapbox control polish === */
+.mapboxgl-ctrl-group {
+  border-radius: 12px !important;
+  overflow: hidden;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12) !important;
+  border: 1px solid rgba(148, 163, 184, 0.25) !important;
+}
+.dark .mapboxgl-ctrl-group { background: #1e293b !important; }
+.dark .mapboxgl-ctrl-group button + button { border-top: 1px solid rgba(71, 85, 105, 0.5) !important; }
+.dark .mapboxgl-ctrl-group button .mapboxgl-ctrl-icon { filter: invert(1) brightness(1.6); }
+
+/* On phones the search bar overlays the map's top edge — drop the top-right
+   control stack (zoom + draw tools) below it so nothing overlaps. */
+@media (max-width: 767px) {
+  .mapboxgl-ctrl-top-right { margin-top: 5rem; margin-right: 0.25rem; }
+  .mapboxgl-ctrl-top-left { margin-top: 5rem; }
+}

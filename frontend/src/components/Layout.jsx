@@ -34,6 +34,12 @@ const MenuIcon = () => (
   </svg>
 );
 
+const LayersIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>
+  </svg>
+);
+
 const Layout = () => {
   const { t } = useTranslation();
   const [isSidebarOpen, setIsSidebarOpen] = useState(window.innerWidth >= 768);
@@ -110,39 +116,40 @@ const Layout = () => {
   return (
     <div className="flex flex-col h-screen w-full bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans">
       {/* Header */}
-      <header className="flex-none h-14 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200/70 dark:border-slate-800/70 px-4 md:px-6 flex items-center justify-between z-20">
-        <div className="flex items-center gap-3">
-          {/* Sidebar toggle */}
+      <header className="flex-none h-14 bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border-b border-slate-200/70 dark:border-slate-800/70 px-3 md:px-6 flex items-center justify-between gap-2 z-20">
+        <div className="flex items-center gap-2 md:gap-3 min-w-0 flex-1 md:flex-none">
+          {/* Sidebar / layers toggle */}
           <button
             onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             aria-label={t('sidebar.layers')}
-            className="p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+            className="shrink-0 p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
           >
             <MenuIcon />
           </button>
-          <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
+          <div className="shrink-0 p-1.5 md:p-2 rounded-xl bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
             <WaterIcon />
           </div>
-          <div>
-            <h1 className="text-sm md:text-base font-bold text-slate-800 dark:text-white leading-tight tracking-tight">
+          <div className="min-w-0">
+            <h1 className="text-sm md:text-base font-bold text-slate-800 dark:text-white leading-tight tracking-tight truncate">
               {t('app.title')}
             </h1>
-            <span className="text-[10px] md:text-xs text-slate-400 dark:text-slate-500 font-medium tracking-wide">
+            <span className="hidden sm:block text-[10px] md:text-xs text-slate-400 dark:text-slate-500 font-medium tracking-wide truncate">
               {t('app.subtitle')}
             </span>
           </div>
         </div>
 
-        {/* Search Bar */}
+        {/* Search Bar (desktop, inline in header) */}
         <div className="hidden md:flex flex-1 justify-center max-w-md px-4">
           <SearchBar onSelectLocation={handleSelectLocation} />
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 md:gap-2 shrink-0">
           {/* AI Analysis Toggle */}
           <button
             onClick={() => setIsAIPanelOpen(!isAIPanelOpen)}
-            className={`flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm ${
+            aria-label={t('ai.button')}
+            className={`flex items-center gap-2 px-2.5 sm:px-3.5 py-2 rounded-xl text-sm font-semibold transition-all duration-200 shadow-sm ${
               isAIPanelOpen
                 ? 'bg-violet-600 text-white shadow-violet-600/30 ring-2 ring-violet-400/40'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -152,7 +159,7 @@ const Layout = () => {
             <span className="hidden sm:inline">{t('ai.button')}</span>
           </button>
 
-          <div className="w-px h-6 bg-slate-200 dark:bg-slate-700 mx-1" />
+          <div className="hidden sm:block w-px h-6 bg-slate-200 dark:bg-slate-700 mx-0.5" />
           <LanguageSwitcher />
           <ThemeToggle />
         </div>
@@ -180,6 +187,15 @@ const Layout = () => {
           <div className="md:hidden absolute top-4 left-4 right-4 z-20">
             <SearchBar onSelectLocation={handleSelectLocation} />
           </div>
+          {/* Mobile: clear, always-visible access to the layers panel */}
+          {!isSidebarOpen && (
+            <button
+              onClick={() => setIsSidebarOpen(true)}
+              className="md:hidden absolute top-[4.75rem] left-4 rtl:left-auto rtl:right-4 z-20 flex items-center gap-2 pl-3 pr-3.5 py-2 rounded-xl bg-white/95 dark:bg-slate-900/95 backdrop-blur-md shadow-lg border border-slate-200/70 dark:border-slate-700/70 text-sm font-semibold text-slate-700 dark:text-slate-200 active:scale-95 transition-transform"
+            >
+              <LayersIcon /> {t('sidebar.layers')}
+            </button>
+          )}
           <MapVisualizer
             isSidebarOpen={isSidebarOpen}
             activeLayers={activeLayers}

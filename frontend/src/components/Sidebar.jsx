@@ -50,13 +50,16 @@ const Sidebar = ({ activeLayers, onToggleLayer, isOpen = false, onClose, wmsLaye
 
   return (
     <aside
-      className={`absolute top-14 md:top-0 bottom-0 left-0 rtl:left-auto rtl:right-0 z-40
-        w-80 max-w-[85vw] overflow-y-auto
+      className={`z-40 flex flex-col overflow-hidden
         bg-white/95 dark:bg-slate-900/95 backdrop-blur-xl
         border-r rtl:border-r-0 rtl:border-l border-slate-200/70 dark:border-slate-800/70
-        flex flex-col shadow-2xl
-        transform transition-transform duration-300 ease-in-out
-        ${isOpen ? 'translate-x-0' : '-translate-x-full rtl:translate-x-full'}`}
+        shadow-2xl md:shadow-none
+        transition-all duration-300 ease-in-out
+        absolute top-14 bottom-0 left-0 rtl:left-auto rtl:right-0 w-80 max-w-[85vw]
+        md:static md:top-0 md:h-full md:max-w-none md:shrink-0
+        ${isOpen
+          ? 'translate-x-0 md:w-80'
+          : '-translate-x-full rtl:translate-x-full md:translate-x-0 md:w-0 md:min-w-0 md:border-0'}`}
     >
       {/* Header */}
       <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
