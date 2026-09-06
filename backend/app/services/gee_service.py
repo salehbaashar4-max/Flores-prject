@@ -183,3 +183,48 @@ def get_groundwater_potential() -> dict:
     except Exception as e:
         print(f"GEE Potential Error: {e}")
         return FALLBACK_GROUNDWATER_POTENTIAL
+
+
+def point_terrain(lat: float, lon: float) -> Dict[str, Any]:
+    """Elevation, slope and mean annual rainfall at a single coordinate.
+
+    Straight from SRTM and CHIRPS via Earth Engine — measured values for one
+    point, which is what the assistant needs in order to stop guessing. Returns
+    an empty dict when Earth Engine is unavailable rather than an estimate.
+    """
+    if not GEE_AVAILABLE or FLORES_BBOX is None:
+        return {}
+
+    out: Dict[str, Any] = {}
+    point = ee.Geometry.Point([lon, lat])
+
+    try:
+        dem = ee.Image('USGS/SRTMGL1_003')
+        terrain = dem.rename('elevation_m').addBands(
+            ee.Terrain.slope(dem).rename('slope_deg')
+        )
+        stats = terrain.reduceRegion(
+            reducer=ee.Reducer.first(), geometry=point, scale=30, maxPixels=10
+        ).getInfo() or {}
+        if stats.get('elevation_m') is not None:
+            out['elevation_m'] = round(float(stats['elevation_m']), 1)
+        if stats.get('slope_deg') is not None:
+            out['slope_deg'] = round(float(stats['slope_deg']), 1)
+        out['terrain_source'] = 'SRTM 30 m via Earth Engine'
+    except Exception as e:
+        print(f"SRTM point sample failed: {e}")
+
+    try:
+        chirps = (ee.ImageCollection('UCSB-CHG/CHIRPS/DAILY')
+                  .filterDate('2020-01-01', '2025-01-01'))
+        annual_mm = chirps.sum().divide(5).reduceRegion(
+            reducer=ee.Reducer.first(), geometry=point, scale=5566, maxPixels=10
+        ).getInfo() or {}
+        value = next(iter(annual_mm.values()), None)
+        if value is not None:
+            out['rainfall_mm_per_year'] = round(float(value))
+            out['rainfall_source'] = 'CHIRPS daily, 2020-2024 mean, via Earth Engine'
+    except Exception as e:
+        print(f"CHIRPS point sample failed: {e}")
+
+    return out
