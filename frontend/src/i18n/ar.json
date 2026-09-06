@@ -99,7 +99,10 @@
     "generatedOn": "تاريخ الإنشاء"
   },
   "search": {
-    "placeholder": "ابحث عن قرية أو منطقة في فلوريس (مثال: Maumere, Ruteng...)"
+    "placeholder": "ابحث عن أي مكان: قرية، مسجد، مدرسة، مبنى…",
+    "noResults": "ما لقيت هذا المكان في بيانات OpenStreetMap للمنطقة. جرّب اسماً أقصر أو اكتب اسم القرية معه.",
+    "outsideRegion": "خارج نطاق فلوريس",
+    "clear": "مسح"
   },
   "mapStyles": {
     "streets": "الشوارع والمباني",

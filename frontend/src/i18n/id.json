@@ -99,7 +99,10 @@
     "generatedOn": "Dibuat pada"
   },
   "search": {
-    "placeholder": "Cari desa atau lokasi di Flores (misal: Maumere, Ruteng...)"
+    "placeholder": "Cari apa saja: desa, masjid, sekolah, bangunan…",
+    "noResults": "Tempat ini tidak ditemukan di data OpenStreetMap wilayah ini. Coba nama yang lebih pendek, atau sertakan nama desanya.",
+    "outsideRegion": "Di luar wilayah Flores",
+    "clear": "Hapus"
   },
   "mapStyles": {
     "streets": "Jalan & Bangunan",
