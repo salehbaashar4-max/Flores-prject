@@ -1,7 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 
 const SendIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -45,26 +43,6 @@ const AIPanel = ({ isOpen, onClose, onAddAIPins }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
   const messagesEndRef = useRef(null);
-
-  /* The full placeholder is two lines at the phone's 16px input size and gets
-     clipped inside the single-row textarea, so narrow screens get a short one. */
-  const [isNarrow, setIsNarrow] = useState(
-    typeof window !== 'undefined' && window.innerWidth < 768
-  );
-  useEffect(() => {
-    const onResize = () => setIsNarrow(window.innerWidth < 768);
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, []);
-
-  /* Grow the composer with the message instead of scrolling a one-line box. */
-  const textareaRef = useRef(null);
-  const autoGrow = () => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = 'auto';
-    el.style.height = `${Math.min(el.scrollHeight, 96)}px`;
-  };
   const recognitionRef = useRef(null);
 
   useEffect(() => {
@@ -251,7 +229,7 @@ const AIPanel = ({ isOpen, onClose, onAddAIPins }) => {
         <button
           onClick={onClose}
           aria-label={t('ai.close', 'إغلاق')}
-          className="grid place-items-center w-11 h-11 -mr-2 rtl:-mr-0 rtl:-ml-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 active:scale-95 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500/60"
+          className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-400 hover:text-slate-600 transition-colors"
         >
           <CloseIcon />
         </button>
@@ -273,19 +251,19 @@ const AIPanel = ({ isOpen, onClose, onAddAIPins }) => {
             <div className="flex flex-col gap-1.5 w-full text-xs">
               <button
                 onClick={() => sendMessage(t('ai.quickPrompt1', 'حدد لي أفضل 5 مواقع لحفر الآبار في جزيرة فلوريس وقريبة من القرى'))}
-                className="text-start min-h-11 px-3 py-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 active:scale-[0.98] text-slate-700 dark:text-slate-300 font-medium transition-all"
+                className="text-right rtl:text-right ltr:text-left p-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 font-medium transition-colors"
               >
                 📍 {t('ai.quickLabel1', 'حدد أفضل 5 مواقع لحفر الآبار وقريبة من القرى')}
               </button>
               <button
                 onClick={() => sendMessage(t('ai.quickPrompt2', 'ما هي التكوينات الجيولوجية وحوض ماوميري في فلوريس؟'))}
-                className="text-start min-h-11 px-3 py-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 active:scale-[0.98] text-slate-700 dark:text-slate-300 font-medium transition-all"
+                className="text-right rtl:text-right ltr:text-left p-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 font-medium transition-colors"
               >
                 💧 {t('ai.quickLabel2', 'تحليل حوض ماوميري والتكوين الصخري')}
               </button>
               <button
                 onClick={() => sendMessage(t('ai.quickPrompt3', 'كم تكلفة حفر بئر ارتوازي في جزيرة فلوريس؟'))}
-                className="text-start min-h-11 px-3 py-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 active:scale-[0.98] text-slate-700 dark:text-slate-300 font-medium transition-all"
+                className="text-right rtl:text-right ltr:text-left p-2.5 rounded-xl bg-slate-100/80 dark:bg-slate-800/80 hover:bg-slate-200/80 dark:hover:bg-slate-700/80 text-slate-700 dark:text-slate-300 font-medium transition-colors"
               >
                 💰 {t('ai.quickLabel3', 'تقدير تكلفة حفر بئر ارتوازي')}
               </button>
@@ -300,15 +278,7 @@ const AIPanel = ({ isOpen, onClose, onAddAIPins }) => {
                 ? 'bg-violet-600 text-white rounded-br-none rtl:rounded-br-2xl rtl:rounded-bl-none shadow-md shadow-violet-600/20'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-none rtl:rounded-bl-2xl rtl:rounded-br-none border border-slate-200/60 dark:border-slate-700/60'
             }`}>
-              {msg.role === 'user' ? (
-                /* dir="auto" keeps punctuation on the correct side when the
-                   message language differs from the interface language. */
-                <div dir="auto" className="whitespace-pre-wrap">{msg.content}</div>
-              ) : (
-                <div dir="auto" className="markdown-body space-y-2">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.content}</ReactMarkdown>
-                </div>
-              )}
+              <div className="whitespace-pre-wrap">{msg.content}</div>
             </div>
           </div>
         ))}
@@ -329,7 +299,7 @@ const AIPanel = ({ isOpen, onClose, onAddAIPins }) => {
       </div>
 
       {/* Input & Voice Controls */}
-      <div className="p-3.5 pb-safe border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
+      <div className="p-3.5 border-t border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900">
         {isRecording && (
           <div className="mb-2 flex items-center justify-between px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/40 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 text-xs font-semibold animate-pulse">
             <span className="flex items-center gap-2">
@@ -347,18 +317,9 @@ const AIPanel = ({ isOpen, onClose, onAddAIPins }) => {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={
-              isRecording
-                ? t('ai.speakNow', 'تحدث الآن...')
-                : isNarrow
-                  ? t('ai.placeholderShort', t('ai.placeholder'))
-                  : t('ai.placeholder')
-            }
+            placeholder={isRecording ? t('ai.speakNow', 'تحدث الآن...') : t('ai.placeholder')}
             rows={1}
-            ref={textareaRef}
-            onInput={autoGrow}
-            enterKeyHint="send"
-            className="flex-1 min-w-0 self-stretch resize-none bg-transparent text-base md:text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none px-2 py-2 max-h-24"
+            className="flex-1 resize-none bg-transparent text-xs md:text-sm text-slate-800 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none px-2 py-1.5 max-h-24"
           />
 
           {/* Voice Input Mic Button */}
@@ -366,7 +327,7 @@ const AIPanel = ({ isOpen, onClose, onAddAIPins }) => {
             onClick={toggleRecording}
             type="button"
             aria-label={isRecording ? t('ai.stopRecording', 'إيقاف التسجيل') : t('ai.startVoice', 'تسجيل صوتي')}
-            className={`grid place-items-center w-11 h-11 rounded-xl transition-all flex-shrink-0 active:scale-95 ${
+            className={`p-2 rounded-xl transition-all flex-shrink-0 ${
               isRecording
                 ? 'bg-red-500 text-white shadow-lg shadow-red-500/30'
                 : 'text-slate-500 hover:text-violet-600 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -381,7 +342,7 @@ const AIPanel = ({ isOpen, onClose, onAddAIPins }) => {
             onClick={sendMessage}
             disabled={!input.trim() || isLoading}
             aria-label={t('ai.send', 'إرسال')}
-            className="grid place-items-center w-11 h-11 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 dark:disabled:bg-slate-800 text-white disabled:text-slate-400 active:scale-95 transition-all flex-shrink-0 shadow-sm"
+            className="p-2 rounded-xl bg-violet-600 hover:bg-violet-700 disabled:bg-slate-200 dark:disabled:bg-slate-800 text-white disabled:text-slate-400 transition-colors flex-shrink-0 shadow-sm"
           >
             <SendIcon />
           </button>
