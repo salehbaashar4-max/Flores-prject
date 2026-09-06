@@ -1,7 +1,7 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
-from app.routers import gee, osm, geodata, ai, wms
+from app.routers import gee, osm, geodata, ai, wms, geo
 from app.services.gee_service import initialize_gee
 
 app = FastAPI(title="Flores Groundwater API")
@@ -46,6 +46,7 @@ app.include_router(osm.router, prefix="/api/osm", tags=["OpenStreetMap"])
 app.include_router(geodata.router, prefix="/api/geodata", tags=["Geodata"])
 app.include_router(ai.router, prefix="/api/ai", tags=["AI Analysis"])
 app.include_router(wms.router, prefix="/api/wms", tags=["WMS Proxy"])
+app.include_router(geo.router, prefix="/api/geo", tags=["Place search"])
 
 @app.get("/api/health")
 def health_check():
