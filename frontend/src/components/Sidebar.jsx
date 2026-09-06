@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 const LayerToggle = ({ id, label, checked, onChange, color }) => (
@@ -12,13 +12,13 @@ const LayerToggle = ({ id, label, checked, onChange, color }) => (
   >
     <div className="flex items-center gap-3">
       <div className={`w-3 h-3 rounded-full ${color} shadow-sm`} />
-      <span className="text-sm font-medium text-slate-700 dark:text-slate-200">
+      <span className="text-sm font-medium text-slate-700 dark:text-slate-200 text-start">
         {label}
       </span>
     </div>
     {/* Clean, fast iOS/Modern switch */}
     <div
-      className={`w-10 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ${
+      className={`shrink-0 w-10 h-5 flex items-center rounded-full p-0.5 transition-colors duration-200 ${
         checked ? 'bg-cyan-500 justify-end' : 'bg-slate-300 dark:bg-slate-700 justify-start'
       }`}
     >
@@ -33,6 +33,43 @@ const CloseIcon = () => (
   </svg>
 );
 
+/* The server proxies GetLegendGraphic straight from the upstream WMS, so this
+   swatch strip is the server's own colour key — not one we invented. If the
+   upstream has no legend endpoint the image errors and the block disappears. */
+const legendUrl = (w) =>
+  `${import.meta.env.VITE_API_BASE_URL || ''}/api/wms/${w.source}` +
+  `?service=WMS&version=1.1.1&request=GetLegendGraphic&sld_version=1.1.0` +
+  `&layer=${encodeURIComponent(w.layer)}&format=image%2Fpng`;
+
+const WmsLegend = ({ layer }) => {
+  const { t } = useTranslation();
+  const [failed, setFailed] = useState(false);
+  if (failed) return null;
+  return (
+    <div className="mx-3 mb-2 -mt-0.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 px-2.5 py-2">
+      <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
+        {t('sidebar.wmsLegendTitle')}
+      </p>
+      <div className="max-h-56 overflow-auto rounded bg-white">
+        <img
+          src={legendUrl(layer)}
+          alt=""
+          loading="lazy"
+          onError={() => setFailed(true)}
+          className="max-w-full h-auto"
+        />
+      </div>
+    </div>
+  );
+};
+
+const LegendSwatch = ({ color, label }) => (
+  <div className="flex items-center gap-2">
+    <div className={`w-2.5 h-2.5 shrink-0 rounded-sm ${color} shadow-sm`} />
+    <span className="text-slate-600 dark:text-slate-400">{label}</span>
+  </div>
+);
+
 const Sidebar = ({ activeLayers, onToggleLayer, isOpen = false, onClose, wmsLayers = [], wmsConfig }) => {
   const { t } = useTranslation();
   const wmsProbed = wmsConfig !== undefined; // discovery request has resolved
@@ -42,8 +79,11 @@ const Sidebar = ({ activeLayers, onToggleLayer, isOpen = false, onClose, wmsLaye
     { id: 'restrictedZones', label: t('sidebar.restrictedZones'), color: 'bg-red-500' },
   ];
 
+  const permitLayers = [
+    { id: 'protectedAreas', label: t('sidebar.protectedAreas'), color: 'bg-amber-500' },
+  ];
+
   const geologicalLayers = [
-    { id: 'groundwaterBasins', label: t('sidebar.groundwaterBasins'), color: 'bg-indigo-500' },
     { id: 'geology', label: t('sidebar.geology'), color: 'bg-orange-500' },
     { id: 'rivers', label: t('sidebar.rivers'), color: 'bg-sky-500' },
   ];
@@ -94,6 +134,29 @@ const Sidebar = ({ activeLayers, onToggleLayer, isOpen = false, onClose, wmsLaye
               />
             ))}
           </div>
+          <p className="text-[10px] leading-relaxed text-slate-400 dark:text-slate-500 px-3 pt-1.5">
+            {t('sidebar.restrictedNote')}
+          </p>
+        </div>
+
+        {/* Permit-required areas — deliberately separate from the ban layer */}
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3 mb-1.5">
+            {t('sidebar.permitSection')}
+          </p>
+          <div className="space-y-0.5">
+            {permitLayers.map(layer => (
+              <LayerToggle
+                key={layer.id}
+                {...layer}
+                checked={!!activeLayers[layer.id]}
+                onChange={onToggleLayer}
+              />
+            ))}
+          </div>
+          <p className="text-[10px] leading-relaxed text-slate-400 dark:text-slate-500 px-3 pt-1.5">
+            {t('sidebar.protectedNote')}
+          </p>
         </div>
 
         {/* Geological & Hydrogeological Data Section */}
@@ -111,9 +174,14 @@ const Sidebar = ({ activeLayers, onToggleLayer, isOpen = false, onClose, wmsLaye
               />
             ))}
           </div>
+          {activeLayers.geology && (
+            <p className="text-[10px] leading-relaxed text-slate-400 dark:text-slate-500 px-3 pt-1.5">
+              {t('sidebar.geologySource')}
+            </p>
+          )}
         </div>
 
-        {/* Official WMS layers (ESDM / BIG) — appear only when the servers respond */}
+        {/* Official WMS layers — appear only when the upstream servers respond */}
         <div>
           <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 px-3 mb-1.5 flex items-center gap-1.5">
             {t('sidebar.wmsSection', 'طبقات رسمية (WMS)')}
@@ -124,20 +192,22 @@ const Sidebar = ({ activeLayers, onToggleLayer, isOpen = false, onClose, wmsLaye
           {wmsLayers.length > 0 ? (
             <div className="space-y-0.5">
               {wmsLayers.map(layer => (
-                <LayerToggle
-                  key={layer.id}
-                  id={layer.id}
-                  label={t(layer.titleKey)}
-                  color={layer.color}
-                  checked={!!activeLayers[layer.id]}
-                  onChange={onToggleLayer}
-                />
+                <React.Fragment key={layer.id}>
+                  <LayerToggle
+                    id={layer.id}
+                    label={t(layer.titleKey)}
+                    color={layer.color}
+                    checked={!!activeLayers[layer.id]}
+                    onChange={onToggleLayer}
+                  />
+                  {activeLayers[layer.id] && <WmsLegend layer={layer} />}
+                </React.Fragment>
               ))}
             </div>
           ) : (
             <p className="text-[11px] text-slate-400 dark:text-slate-500 px-3 py-2 leading-relaxed">
               {wmsProbed
-                ? t('sidebar.wmsUnavailable', 'الخوادم الرسمية (ESDM/BIG) غير متاحة حالياً من هذا الخادم.')
+                ? t('sidebar.wmsUnavailable', 'الخوادم الرسمية غير متاحة حالياً من هذا الخادم.')
                 : t('sidebar.wmsLoading', 'جارٍ فحص الخوادم الرسمية...')}
             </p>
           )}
@@ -159,32 +229,13 @@ const Sidebar = ({ activeLayers, onToggleLayer, isOpen = false, onClose, wmsLaye
           </div>
         </div>
 
-        {/* Restricted and Geological Zones indicators */}
         <div className="grid grid-cols-2 gap-2 text-[11px]">
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-sm bg-red-500 shadow-sm" />
-            <span className="text-slate-600 dark:text-slate-400">{t('sidebar.cemetery')}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-sm bg-amber-500 shadow-sm" />
-            <span className="text-slate-600 dark:text-slate-400">{t('sidebar.protectedArea')}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-sm bg-slate-500 shadow-sm" />
-            <span className="text-slate-600 dark:text-slate-400">{t('sidebar.military')}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-sm bg-indigo-500 shadow-sm" />
-            <span className="text-slate-600 dark:text-slate-400">{t('sidebar.groundwaterBasins', 'حوض جوفي (CAT)')}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-sm bg-orange-500 shadow-sm" />
-            <span className="text-slate-600 dark:text-slate-400">{t('sidebar.geology')}</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-2.5 h-2.5 rounded-sm bg-sky-500 shadow-sm" />
-            <span className="text-slate-600 dark:text-slate-400">{t('sidebar.rivers')}</span>
-          </div>
+          <LegendSwatch color="bg-red-500" label={t('sidebar.cemetery')} />
+          <LegendSwatch color="bg-slate-500" label={t('sidebar.military')} />
+          <LegendSwatch color="bg-fuchsia-600" label={t('sidebar.airport')} />
+          <LegendSwatch color="bg-amber-500" label={t('sidebar.protectedArea')} />
+          <LegendSwatch color="bg-sky-500" label={t('sidebar.rivers')} />
+          <LegendSwatch color="bg-gradient-to-r from-orange-400 to-yellow-300" label={t('sidebar.geology')} />
         </div>
       </div>
     </aside>

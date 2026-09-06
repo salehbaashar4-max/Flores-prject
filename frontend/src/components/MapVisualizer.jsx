@@ -70,8 +70,7 @@ const MapVisualizer = ({
   wmsLayers,
   potentialData,
   restrictedZonesData,
-  catBasinsData,
-  geologyData,
+  protectedAreasData,
   riversData,
   pinnedPoints,
   aiPins,
@@ -270,7 +269,7 @@ const MapVisualizer = ({
         interactiveLayerIds={[
           'groundwater-potential-fill',
           'restricted-zones-fill',
-          'cat-basins-fill',
+          'protected-areas-fill',
           'geology-fill'
         ]}
         onMouseMove={onHover}
@@ -311,46 +310,61 @@ const MapVisualizer = ({
           );
         })}
 
-        {/* 1. Groundwater Basins (CAT - Cekungan Air Tanah) */}
-        {activeLayers.groundwaterBasins && catBasinsData && (
-          <Source id="cat-basins-src" type="geojson" data={catBasinsData}>
+        {/* 1. Protected areas — permit required, NOT a drilling ban. Drawn as a
+             hatched amber outline so it never reads like the red no-go layer. */}
+        {activeLayers.protectedAreas && protectedAreasData && (
+          <Source id="protected-src" type="geojson" data={protectedAreasData}>
             <Layer
-              id="cat-basins-fill"
+              id="protected-areas-fill"
               type="fill"
               paint={{
-                'fill-color': '#6366f1',
-                'fill-opacity': 0.25,
+                'fill-color': '#f59e0b',
+                'fill-opacity': 0.15,
               }}
             />
             <Layer
-              id="cat-basins-line"
+              id="protected-areas-line"
               type="line"
               paint={{
-                'line-color': '#4f46e5',
+                'line-color': '#d97706',
                 'line-width': 2,
-                'line-dasharray': [2, 2],
+                'line-dasharray': [3, 2],
               }}
             />
           </Source>
         )}
 
-        {/* 2. Regional Geology & Lithology */}
-        {activeLayers.geology && geologyData && (
-          <Source id="geology-src" type="geojson" data={geologyData}>
+        {/* 2. Regional geology & lithology — Macrostrat vector tiles carrying the
+             Geological Survey of Canada world bedrock map (CC-BY 4.0). Each unit
+             is painted with its own published colour, not a flat house colour.
+             Indonesia is only mapped at the small-scale tileset, so the source is
+             capped at z5 and mapbox overzooms it above that. */}
+        {activeLayers.geology && (
+          <Source
+            id="geology-src"
+            type="vector"
+            tiles={['https://tiles.macrostrat.org/carto/{z}/{x}/{y}']}
+            minzoom={0}
+            maxzoom={5}
+            attribution="Macrostrat / GSC world geology (CC-BY 4.0)"
+          >
             <Layer
               id="geology-fill"
               type="fill"
+              source-layer="units"
               paint={{
-                'fill-color': '#f97316', /* Solid orange to match legend */
-                'fill-opacity': 0.3,
+                'fill-color': ['coalesce', ['get', 'color'], '#f97316'],
+                'fill-opacity': 0.45,
               }}
             />
             <Layer
               id="geology-line"
               type="line"
+              source-layer="units"
               paint={{
-                'line-color': '#ea580c',
-                'line-width': 1.5,
+                'line-color': '#1e293b',
+                'line-opacity': 0.35,
+                'line-width': 0.8,
               }}
             />
           </Source>
@@ -403,7 +417,7 @@ const MapVisualizer = ({
           </Source>
         )}
 
-        {/* 5. Restricted Zones (Cemeteries, Nature Reserves, Military) */}
+        {/* 5. Restricted zones — genuine no-drill only: cemeteries, military, airports */}
         {activeLayers.restrictedZones && restrictedZonesData && (
           <Source id="rz-src" type="geojson" data={restrictedZonesData}>
             <Layer
@@ -414,8 +428,8 @@ const MapVisualizer = ({
                   'match',
                   ['get', 'type'],
                   'cemetery', '#ef4444',
-                  'protected_area', '#f59e0b',
                   'military', '#64748b',
+                  'airport', '#c026d3',
                   '#ef4444'
                 ],
                 'fill-opacity': 0.45,
@@ -429,8 +443,8 @@ const MapVisualizer = ({
                   'match',
                   ['get', 'type'],
                   'cemetery', '#dc2626',
-                  'protected_area', '#d97706',
                   'military', '#475569',
+                  'airport', '#a21caf',
                   '#dc2626'
                 ],
                 'line-width': 2,
@@ -580,7 +594,10 @@ const MapVisualizer = ({
           <Popup longitude={hoverInfo.lngLat.lng} latitude={hoverInfo.lngLat.lat} closeButton={false} offset={12}>
             <div className="p-2.5 min-w-[180px] bg-white/95 dark:bg-slate-800/95 backdrop-blur-md rounded-lg shadow-lg">
               {Object.entries(hoverInfo.properties)
-                .filter(([k]) => !['source_tags', 'color', 'id', 'name_ar', 'name_id'].includes(k))
+                .filter(([k, v]) => ![
+                  'source_tags', 'color', 'id', 'name_ar', 'name_id',
+                  'map_id', 'source_id', 'legend_id', 'best_age_top',
+                ].includes(k) && v !== null && v !== '')
                 .concat(
                   (hoverInfo.properties.name_ar || hoverInfo.properties.name_id) 
                     ? [['name', i18n.language.startsWith('ar') ? hoverInfo.properties.name_ar || hoverInfo.properties.name_id : hoverInfo.properties.name_id || hoverInfo.properties.name_ar]]

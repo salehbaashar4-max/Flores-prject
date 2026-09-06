@@ -9,8 +9,7 @@ import SearchBar from './SearchBar';
 import {
   useGroundwaterPotential,
   useRestrictedZones,
-  useCATBasins,
-  useGeology,
+  useProtectedAreas,
   useRivers,
   useWMSConfig,
 } from '../hooks/useMapData';
@@ -46,7 +45,7 @@ const Layout = () => {
   const [activeLayers, setActiveLayers] = useState({
     groundwaterPotential: false,
     restrictedZones: true,
-    groundwaterBasins: false,
+    protectedAreas: false,
     geology: false,
     rivers: false,
     wmsGeology: false,
@@ -55,9 +54,10 @@ const Layout = () => {
 
   const { data: potentialData } = useGroundwaterPotential();
   const { data: restrictedZonesData } = useRestrictedZones();
-  const { data: catBasinsData } = useCATBasins();
-  const { data: geologyData } = useGeology();
-  const { data: riversData } = useRivers();
+  // Both of these hit heavy Overpass queries, so they only run once their
+  // layer is switched on rather than on every page load.
+  const { data: protectedAreasData } = useProtectedAreas(activeLayers.protectedAreas);
+  const { data: riversData } = useRivers(activeLayers.rivers);
   const { data: wmsConfig } = useWMSConfig();
 
   // Resolve which official WMS layers are actually available (server-side discovery).
@@ -186,8 +186,7 @@ const Layout = () => {
             wmsLayers={wmsLayers}
             potentialData={potentialData}
             restrictedZonesData={restrictedZonesData}
-            catBasinsData={catBasinsData}
-            geologyData={geologyData}
+            protectedAreasData={protectedAreasData}
             riversData={riversData}
             pinnedPoints={pinnedPoints}
             aiPins={aiPins}
