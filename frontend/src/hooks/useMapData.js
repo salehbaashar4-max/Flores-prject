@@ -46,6 +46,7 @@ export const useGroundwaterPotential = () => {
   });
 };
 
+/* Genuine no-drill areas: military land, cemeteries, airport airside (OSM). */
 export const useRestrictedZones = () => {
   return useQuery({
     queryKey: ['restrictedZones'],
@@ -54,33 +55,31 @@ export const useRestrictedZones = () => {
   });
 };
 
-export const useCATBasins = () => {
+/* National parks and nature reserves — permit zones, not drilling bans.
+   Fetched only once the user switches the layer on: the park relations are
+   large and most sessions never need them. */
+export const useProtectedAreas = (enabled = false) => {
   return useQuery({
-    queryKey: ['catBasins'],
-    queryFn: () => fetcher('/api/geodata/cat-basins'),
+    queryKey: ['protectedAreas'],
+    queryFn: () => fetcher('/api/osm/protected-areas'),
+    enabled,
     ...queryOptions,
   });
 };
 
-export const useGeology = () => {
-  return useQuery({
-    queryKey: ['geology'],
-    queryFn: () => fetcher('/api/geodata/geology'),
-    ...queryOptions,
-  });
-};
-
-export const useRivers = () => {
+/* Rivers and streams (OSM). Also lazy — it is the heaviest Overpass query. */
+export const useRivers = (enabled = false) => {
   return useQuery({
     queryKey: ['rivers'],
     queryFn: () => fetcher('/api/geodata/rivers'),
+    enabled,
     ...queryOptions,
   });
 };
 
-/* Live discovery of official Indonesian WMS layers (ESDM / BIG / OneGeology).
+/* Live discovery of official WMS layers (USGS / BGR / ESDM / BIG / OneGeology).
    Returns per-source reachability + resolved geology/groundwater layer names.
-   Retried a bit since government servers can be slow, but never blocks the app. */
+   Never blocks the app: unreachable servers simply produce no toggle. */
 export const useWMSConfig = () => {
   return useQuery({
     queryKey: ['wmsConfig'],
