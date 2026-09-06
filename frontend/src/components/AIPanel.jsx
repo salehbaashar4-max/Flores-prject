@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
+import ReactMarkdown from 'react-markdown';
 
 const SendIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -278,7 +279,48 @@ const AIPanel = ({ isOpen, onClose, onAddAIPins }) => {
                 ? 'bg-violet-600 text-white rounded-br-none rtl:rounded-br-2xl rtl:rounded-bl-none shadow-md shadow-violet-600/20'
                 : 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-bl-none rtl:rounded-bl-2xl rtl:rounded-br-none border border-slate-200/60 dark:border-slate-700/60'
             }`}>
-              <div className="whitespace-pre-wrap">{msg.content}</div>
+              {msg.role === 'user' ? (
+                <div className="whitespace-pre-wrap">{msg.content}</div>
+              ) : (
+                /* The model answers in Markdown; render it properly instead of
+                   spilling raw ** and ## into the bubble. */
+                <div className="ai-markdown">
+                  <ReactMarkdown
+                    components={{
+                      p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                      strong: ({ children }) => (
+                        <strong className="font-bold text-slate-900 dark:text-white">{children}</strong>
+                      ),
+                      ul: ({ children }) => <ul className="list-disc ps-5 mb-2 space-y-1">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal ps-5 mb-2 space-y-1">{children}</ol>,
+                      li: ({ children }) => <li className="leading-relaxed">{children}</li>,
+                      h1: ({ children }) => <h3 className="text-sm font-bold mt-3 mb-1.5 first:mt-0">{children}</h3>,
+                      h2: ({ children }) => <h3 className="text-sm font-bold mt-3 mb-1.5 first:mt-0">{children}</h3>,
+                      h3: ({ children }) => <h4 className="text-[13px] font-bold mt-2.5 mb-1 first:mt-0">{children}</h4>,
+                      code: ({ children }) => (
+                        <code className="px-1 py-0.5 rounded bg-slate-200 dark:bg-slate-700 text-[11px] font-mono" dir="ltr">{children}</code>
+                      ),
+                      a: ({ href, children }) => (
+                        <a href={href} target="_blank" rel="noopener noreferrer" className="text-cyan-600 dark:text-cyan-400 underline">{children}</a>
+                      ),
+                      table: ({ children }) => (
+                        <div className="overflow-x-auto my-2">
+                          <table className="w-full text-[11px] border-collapse">{children}</table>
+                        </div>
+                      ),
+                      th: ({ children }) => (
+                        <th className="border border-slate-300 dark:border-slate-600 px-2 py-1 bg-slate-200/60 dark:bg-slate-700/60 font-semibold">{children}</th>
+                      ),
+                      td: ({ children }) => (
+                        <td className="border border-slate-300 dark:border-slate-600 px-2 py-1">{children}</td>
+                      ),
+                      hr: () => <hr className="my-2.5 border-slate-300/60 dark:border-slate-600/60" />,
+                    }}
+                  >
+                    {msg.content}
+                  </ReactMarkdown>
+                </div>
+              )}
             </div>
           </div>
         ))}

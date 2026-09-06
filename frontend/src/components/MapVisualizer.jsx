@@ -139,9 +139,11 @@ const MapVisualizer = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           area_data: {
-            bbox: `Point Coordinates: ${pin.latitude}°S, ${pin.longitude}°E`,
-            potential_zones_count: pin.label || 'High Potential Area',
-            restricted_zones_count: '0 (Safe from restricted areas)',
+            latitude: pin.latitude,
+            longitude: pin.longitude,
+            bbox: `${pin.latitude}, ${pin.longitude}`,
+            label: pin.label || '',
+            active_layers: Object.entries(activeLayers).filter(([, v]) => v).map(([k]) => k),
           },
           language: i18n.language
         })
